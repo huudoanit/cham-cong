@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Chấm Công - Mix 3</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Google Sans', 'Roboto', Arial, sans-serif; }
+  body { background: #e8eaed; padding: 12px; color: #202124; }
+
+  .toolbar { background: #fff; border-bottom: 1px solid #dadce0; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; margin-bottom: 10px; }
+  .toolbar .logo { font-weight: 600; color: #1a73e8; font-size: 14px; }
+  .toolbar .title { color: #5f6368; font-size: 13px; margin-left: 12px; }
+  .toolbar .chip { background: #f1f3f4; padding: 5px 12px; border-radius: 4px; font-size: 12px; color: #3c4043; margin-left: 8px; }
+
+  .header { background: #fff; padding: 14px 20px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 18px; font-weight: 500; color: #202124; }
+  .header .sub { font-size: 12px; color: #5f6368; margin-top: 4px; }
+
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 10px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+  .card { background: #fff; border: 1px solid #dadce0; border-radius: 6px; padding: 14px; }
+  .card-title { font-size: 12px; font-weight: 500; color: #5f6368; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .value { font-size: 38px; font-weight: 400; line-height: 1; color: #202124; }
+  .value.green { color: #0d652d; }
+  .value.orange { color: #b06000; }
+  .value.red { color: #a50e0e; }
+  .value.blue { color: #1a73e8; }
+  .sub { font-size: 12px; color: #5f6368; margin-top: 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 8px 6px; border-bottom: 2px solid #dadce0; color: #5f6368; font-weight: 500; font-size: 11px; text-transform: uppercase; }
+  td { padding: 8px 6px; border-bottom: 1px solid #f1f3f4; color: #202124; }
+  tr:hover { background: #f8f9fa; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .badge-red { background: #fce8e6; color: #a50e0e; }
+  .badge-yellow { background: #fef7e0; color: #b06000; }
+  .badge-green { background: #e6f4ea; color: #0d652d; }
+  .badge-blue { background: #e8f0fe; color: #1a73e8; }
+  .badge-gray { background: #f1f3f4; color: #5f6368; }
+
+  .chart-box { position: relative; height: 240px; }
+  .chart-box.tall { height: 260px; }
+  .scroll { max-height: 300px; overflow-y: auto; }
+  .footer { text-align: center; font-size: 11px; color: #9aa0a6; padding: 12px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div>
+    <span class="logo">Looker Studio</span>
+    <span class="title">Dashboard Chấm Công - Ban Giám Đốc</span>
+  </div>
+  <div>
+    <span class="chip">Ngày 15/10/2026</span>
+    <span class="chip">Tất cả nhóm máy ▼</span>
+  </div>
+</div>
+
+<div class="header">
+  <div>
+    <h1>Dashboard Chấm Công – Ban Giám Đốc</h1>
+    <div class="sub">Nguồn: Wise Eye Mix 3 · Cập nhật: 15/10/2026 08:30</div>
+  </div>
+  <div style="font-size:13px;color:#5f6368;">Công ty TNHH Minh Danh</div>
+</div>
+
+<!-- VÙNG 1: 5 THẺ SỐ TỔNG QUAN -->
+<div class="grid-5">
+  <div class="card">
+    <div class="card-title">Tổng nhân sự</div>
+    <div class="value" id="totalEmp">0</div>
+    <div class="sub" id="totalUnits">0 đơn vị</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Có mặt</div>
+    <div class="value green" id="presentEmp">0</div>
+    <div class="sub">Có chấm công vào</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Vắng</div>
+    <div class="value orange" id="absentEmp">0</div>
+    <div class="sub">Không chấm công</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Đi muộn</div>
+    <div class="value red" id="lateEmp">0</div>
+    <div class="sub" id="lateMin">0 phút</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Tổng giờ làm</div>
+    <div class="value blue" id="totalHours">0</div>
+    <div class="sub">Giờ công toàn công ty</div>
+  </div>
+</div>
+
+<!-- VÙNG 2: BIỂU ĐỒ CỘT + BẢNG XẾP HẠNG -->
+<div class="grid-3">
+  <div class="card">
+    <div class="card-title">Tình hình theo Nhóm máy</div>
+    <div class="chart-box"><canvas id="chartGroup"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Xếp hạng đơn vị theo tỷ lệ vắng</div>
+    <div class="scroll">
+      <table id="tableRank">
+        <thead><tr><th>Đơn vị</th><th>Tổng</th><th>Vắng</th><th>Tỷ lệ</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VÙNG 3: BẢNG ĐI MUỘN + BẢNG VẮNG -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Danh sách đi muộn / về sớm</div>
+    <div class="scroll">
+      <table id="tableLate">
+        <thead><tr><th>Tên NV</th><th>Đơn vị</th><th>Vào trễ</th><th>Ra sớm</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Danh sách vắng (không chấm công)</div>
+    <div class="scroll">
+      <table id="tableAbsent">
+        <thead><tr><th>Tên NV</th><th>Đơn vị</th><th>Nhóm máy</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- VÙNG 4: XU HƯỚNG -->
+<div class="card" style="margin-bottom:10px;">
+  <div class="card-title">Xu hướng theo ngày</div>
+  <div class="chart-box tall"><canvas id="chartTrend"></canvas></div>
+</div>
+
+<div class="footer">Dashboard demo · Dữ liệu minh họa từ Wise Eye Mix 3 · Looker Studio + Google Sheets</div>
+
+<script>
+// ===== DỮ LIỆU MẪU TỪ FILE MIX 3 =====
+const EMPLOYEES = [
+  // Tổ bảo vệ (7)
+  { ma:"00094", ten:"Vương Đức Theo", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"16:41", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00427", ten:"Phạm Công Sơn", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"17:27", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00429", ten:"Vương Văn Lực", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"16:57", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00442", ten:"Nguyễn Văn Lai", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"00:13", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00443", ten:"Phạm Như Tơn", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"17:32", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00445", ten:"Nguyễn Tiến Vũ", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01123", ten:"Vũ Gia Thái", nhomMay:"Tổ bảo vệ", donVi:"Tổ bảo vệ", gioVao:"16:44", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+
+  // Phôi X1 (4)
+  { ma:"127", ten:"Bùi Văn Chinh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X1", gioVao:"00:02", tongGio:13.22, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"155", ten:"Cao Văn Khôi", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X1", gioVao:"06:39", tongGio:11.73, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00458", ten:"Trần Đức Kế", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X1", gioVao:"01:53", tongGio:10.5, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"591", ten:"Trần Văn Huấn", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X1", gioVao:"06:44", tongGio:11.7, vaoTrePhut:0, raSomPhut:0 },
+
+  // Phôi X2 (20)
+  { ma:"50", ten:"Bùi Văn Luật", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:39", tongGio:11.44, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"61", ten:"Trần Văn Trịnh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:47", tongGio:11.51, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"65", ten:"Hoàng Xuân Anh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:46", tongGio:11.65, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"66", ten:"Trần Quang Lưu", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:41", tongGio:11.57, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"139", ten:"Phạm Xuân Vịnh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"01:52", tongGio:10.32, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"141", ten:"Phạm Thế Dân", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"00:00", tongGio:12.79, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"145", ten:"Mai Văn Huấn", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:50", tongGio:11.55, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"146", ten:"Phạm Văn Hợp", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:37", tongGio:12.05, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"150", ten:"Trần Duy Duy", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"01:48", tongGio:10.13, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"272", ten:"Nguyễn Hữu Quang", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"00:05", tongGio:12.81, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"281", ten:"Nguyễn Hoàng Anh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:47", tongGio:11.3, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"291", ten:"Nguyễn Hữu Kha", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"01:45", tongGio:9.1, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00420", ten:"Phạm Bá Bình", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:49", tongGio:11.92, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00468", ten:"Quách Đình Hợp", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:50", tongGio:11.57, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"502", ten:"Hoàng Phú Chượng", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:43", tongGio:11.4, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"525", ten:"Bùi Văn Thương", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:43", tongGio:11.92, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00732", ten:"Nguyễn Tấn Anh", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"01:00", tongGio:11.05, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00832", ten:"Đỗ Văn Khải", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"00:05", tongGio:0.88, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00838", ten:"Nguyễn Văn Tùng", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"01:46", tongGio:10.36, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00856", ten:"Ngô Văn Thái", nhomMay:"Tổ Hợp phôi", donVi:"Phôi X2", gioVao:"06:51", tongGio:11.45, vaoTrePhut:0, raSomPhut:0 },
+
+  // Tổ Sơn xưởng 2 (24) - lấy mẫu 8
+  { ma:"00091", ten:"Hoàng Văn Du", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"00:03", tongGio:13.73, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"125", ten:"Nguyễn Văn Hoàn", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"06:33", tongGio:11.9, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"126", ten:"Trần Quang Thiểm", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"06:43", tongGio:11.58, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"129", ten:"Bùi Văn Huế", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"06:51", tongGio:11.35, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"131", ten:"Lã Quý Mạnh", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"06:39", tongGio:11.69, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"134", ten:"Bùi Ngọc Dương", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"01:52", tongGio:10.5, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"136", ten:"Phạm Văn Tuấn", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"06:43", tongGio:11.3, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"137", ten:"Nguyễn Đức Vinh", nhomMay:"Tổ Sơn xưởng 2", donVi:"Tổ Sơn xưởng 2", gioVao:"01:47", tongGio:10.36, vaoTrePhut:0, raSomPhut:0 },
+
+  // Máy 4 - Tổ CN (4)
+  { ma:"00076", ten:"Lã Thị Liên", nhomMay:"Máy 4", donVi:"Tổ CN", gioVao:"07:07", tongGio:10.13, vaoTrePhut:7, raSomPhut:0 },
+  { ma:"00092", ten:"Bùi Thị Nhiễn", nhomMay:"Máy 4", donVi:"Tổ CN", gioVao:"06:48", tongGio:9.24, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"415", ten:"Phan Thị Thêu", nhomMay:"Máy 4", donVi:"Tổ CN", gioVao:"06:43", tongGio:8.72, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00912", ten:"Nguyễn Thị Hà", nhomMay:"Máy 4", donVi:"Tổ CN", gioVao:"05:47", tongGio:9.53, vaoTrePhut:0, raSomPhut:0 },
+
+  // Máy 4 - Tổ Điện (1)
+  { ma:"561", ten:"Nguyễn Văn Hoan", nhomMay:"Máy 4", donVi:"Tổ Điện", gioVao:"07:00", tongGio:11.43, vaoTrePhut:0, raSomPhut:0 },
+
+  // Máy 4 - Tổ Đô gá hàn (72) - lấy mẫu 10
+  { ma:"3", ten:"Nguyễn Bá Tĩnh", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:40", tongGio:11.85, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"5", ten:"Trần Đình Doanh", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"00:56", tongGio:11.23, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"8", ten:"Phạm Phú Tuyến", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:49", tongGio:11.53, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"10", ten:"Phạm Phú Phương", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:59", tongGio:11.29, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"11", ten:"Phạm Văn Đang", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:39", tongGio:11.65, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"13", ten:"Nguyễn Văn Phương 1", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:27", tongGio:8.67, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"14", ten:"Vũ Viết Thêm", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:39", tongGio:4.58, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"15", ten:"Bùi Bá Liêm", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:45", tongGio:11.65, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"16", ten:"Đỗ Quang Hưng", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"19", ten:"Mai Quý Dương", nhomMay:"Máy 4", donVi:"Tổ Đô gá hàn", gioVao:"06:45", tongGio:11.53, vaoTrePhut:0, raSomPhut:0 },
+
+  // Máy 6 - BP Kho (5)
+  { ma:"44", ten:"Phạm Quang Thanh", nhomMay:"Máy 6", donVi:"BP Kho", gioVao:"06:46", tongGio:10.23, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00735", ten:"Phạm Trung Đức", nhomMay:"Máy 6", donVi:"BP Kho", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00823", ten:"Vũ Viết Hà", nhomMay:"Máy 6", donVi:"BP Kho", gioVao:"06:35", tongGio:10.1, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"1002", ten:"Nguyễn Hoàng Quân", nhomMay:"Máy 6", donVi:"BP Kho", gioVao:"06:52", tongGio:10.8, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01112", ten:"Phạm Văn Hải", nhomMay:"Máy 6", donVi:"BP Kho", gioVao:"06:54", tongGio:10.63, vaoTrePhut:0, raSomPhut:0 },
+
+  // Máy 6 - Phòng dự án (12) - mẫu 5
+  { ma:"00096", ten:"Trần Đình Phúc", nhomMay:"Máy 6", donVi:"Phòng dự án", gioVao:"06:53", tongGio:5.27, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00395", ten:"Bùi Văn Trường", nhomMay:"Máy 6", donVi:"Phòng dự án", gioVao:"07:27", tongGio:10.77, vaoTrePhut:27, raSomPhut:0 },
+  { ma:"00738", ten:"Nguyễn Thanh Bình", nhomMay:"Máy 6", donVi:"Phòng dự án", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00751", ten:"Phan Minh Châu", nhomMay:"Máy 6", donVi:"Phòng dự án", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00865", ten:"Phạm Thị Quyên", nhomMay:"Máy 6", donVi:"Phòng dự án", gioVao:"06:51", tongGio:10.22, vaoTrePhut:0, raSomPhut:0 },
+
+  // Thuê ngoài - Nhóm ngoại quốc (16) - mẫu 5
+  { ma:"00498", ten:"SHEK MD BABUL", nhomMay:"Thuê ngoài", donVi:"Nhóm ngoại quốc", gioVao:"06:39", tongGio:11.77, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00499", ten:"HABIB MD", nhomMay:"Thuê ngoài", donVi:"Nhóm ngoại quốc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00504", ten:"HASAN MD SAIKAT", nhomMay:"Thuê ngoài", donVi:"Nhóm ngoại quốc", gioVao:"06:50", tongGio:9.23, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00505", ten:"ALI MD YOUSUF", nhomMay:"Thuê ngoài", donVi:"Nhóm ngoại quốc", gioVao:"06:54", tongGio:11.59, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00507", ten:"SAGOR MD ZIAUL HAQUE", nhomMay:"Thuê ngoài", donVi:"Nhóm ngoại quốc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+
+  // Tổ a Cừ (21) - mẫu 8
+  { ma:"00309", ten:"Nguyễn Quốc Cừ", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"00:32", tongGio:11.5, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00473", ten:"Phạm Quyết Tiến", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"00:08", tongGio:12.53, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01075", ten:"Mai Thế Tình", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"00:58", tongGio:11.35, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01076", ten:"Nguyễn Văn Hùng", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"01:04", tongGio:11.22, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01077", ten:"Phạm Đức Nam", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"06:48", tongGio:11.22, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01078", ten:"Ngô Ngọc Anh", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01079", ten:"Nguyễn Đức Tĩnh", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"01080", ten:"Dương Bình Phong", nhomMay:"Tổ a Cừ", donVi:"Tổ a Cừ", gioVao:"06:33", tongGio:11.7, vaoTrePhut:0, raSomPhut:0 },
+
+  // Tổ a Sáng (2)
+  { ma:"00937", ten:"Hà Quang Sáng", nhomMay:"Tổ a Sáng", donVi:"Tổ a Sáng", gioVao:"06:39", tongGio:11.9, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00946", ten:"Hà Anh Tuấn", nhomMay:"Tổ a Sáng", donVi:"Tổ a Sáng", gioVao:"01:46", tongGio:10.54, vaoTrePhut:0, raSomPhut:0 },
+
+  // Nghỉ việc (91) - mẫu 5
+  { ma:"22", ten:"Nguyễn Văn Đoài", nhomMay:"Nghỉ việc", donVi:"Nghỉ việc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00024", ten:"Trần Đình Diễm", nhomMay:"Nghỉ việc", donVi:"Nghỉ việc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"00029", ten:"Phạm Bá Tuấn", nhomMay:"Nghỉ việc", donVi:"Nghỉ việc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"64", ten:"Phạm Phú Huấn", nhomMay:"Nghỉ việc", donVi:"Nghỉ việc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 },
+  { ma:"72", ten:"Lê Ngọc Triệu", nhomMay:"Nghỉ việc", donVi:"Nghỉ việc", gioVao:"", tongGio:0, vaoTrePhut:0, raSomPhut:0 }
+];
+
+// ===== TÍNH TOÁN =====
+const total = EMPLOYEES.length;
+const present = EMPLOYEES.filter(e => e.gioVao && e.gioVao !== '').length;
+const absent = total - present;
+const late = EMPLOYEES.filter(e => e.vaoTrePhut > 0).length;
+const lateMinutes = EMPLOYEES.reduce((s, e) => s + e.vaoTrePhut, 0);
+const totalHours = EMPLOYEES.reduce((s, e) => s + e.tongGio, 0);
+
+const units = new Set(EMPLOYEES.map(e => e.donVi)).size;
+
+document.getElementById('totalEmp').textContent = total;
+document.getElementById('presentEmp').textContent = present;
+document.getElementById('absentEmp').textContent = absent;
+document.getElementById('lateEmp').textContent = late;
+document.getElementById('lateMin').textContent = lateMinutes + ' phút';
+document.getElementById('totalHours').textContent = totalHours.toFixed(0);
+document.getElementById('totalUnits').textContent = units + ' đơn vị';
+
+// ===== NHÓM THEO NHÓM MÁY =====
+const byGroup = {};
+EMPLOYEES.forEach(e => {
+  const key = e.nhomMay || 'Khác';
+  if (!byGroup[key]) byGroup[key] = { total: 0, present: 0, absent: 0, hours: 0 };
+  byGroup[key].total++;
+  if (e.gioVao && e.gioVao !== '') byGroup[key].present++;
+  else byGroup[key].absent++;
+  byGroup[key].hours += e.tongGio;
+});
+const groupList = Object.entries(byGroup).sort((a,b) => b[1].total - a[1].total);
+
+new Chart(document.getElementById('chartGroup'), {
+  type: 'bar',
+  data: {
+    labels: groupList.map(g => g[0]),
+    datasets: [
+      { label: 'Có mặt', data: groupList.map(g => g[1].present), backgroundColor: '#1a73e8' },
+      { label: 'Vắng', data: groupList.map(g => g[1].absent), backgroundColor: '#ea4335' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+    scales: {
+      x: { stacked: true, ticks: { font: { size: 10 } } },
+      y: { stacked: true, beginAtZero: true }
+    }
+  }
+});
+
+// ===== XẾP HẠNG ĐƠN VỊ THEO TỶ LỆ VẮNG =====
+const byUnit = {};
+EMPLOYEES.forEach(e => {
+  const key = e.donVi || 'Khác';
+  if (!byUnit[key]) byUnit[key] = { total: 0, absent: 0, nhomMay: e.nhomMay };
+  byUnit[key].total++;
+  if (!e.gioVao || e.gioVao === '') byUnit[key].absent++;
+});
+const rankList = Object.entries(byUnit).map(([k,v]) => ({
+  donVi: k, nhomMay: v.nhomMay, total: v.total, absent: v.absent,
+  tyLe: v.total > 0 ? (v.absent / v.total * 100) : 0
+})).sort((a,b) => b.tyLe - a.tyLe);
+
+document.querySelector('#tableRank tbody').innerHTML = rankList.map(u => {
+  let cls = 'badge-green';
+  if (u.tyLe >= 20) cls = 'badge-red';
+  else if (u.tyLe >= 10) cls = 'badge-yellow';
+  else if (u.tyLe > 0) cls = 'badge-blue';
+  return `<tr>
+    <td>${u.donVi}</td>
+    <td>${u.total}</td>
+    <td>${u.absent}</td>
+    <td><span class="badge ${cls}">${u.tyLe.toFixed(0)}%</span></td>
+  </tr>`;
+}).join('');
+
+// ===== DANH SÁCH ĐI MUỘN =====
+const lateList = EMPLOYEES.filter(e => e.vaoTrePhut > 0 || e.raSomPhut > 0)
+  .sort((a,b) => b.vaoTrePhut - a.vaoTrePhut);
+document.querySelector('#tableLate tbody').innerHTML = lateList.length > 0
+  ? lateList.map(e => `<tr>
+      <td>${e.ten}</td>
+      <td>${e.donVi}</td>
+      <td><span class="badge badge-red">${e.vaoTrePhut} phút</span></td>
+      <td>${e.raSomPhut > 0 ? e.raSomPhut + ' phút' : '—'}</td>
+    </tr>`).join('')
+  : '<tr><td colspan="4" style="text-align:center;color:#9aa0a6;padding:20px;">Không có ai đi muộn / về sớm</td></tr>';
+
+// ===== DANH SÁCH VẮNG =====
+const absentList = EMPLOYEES.filter(e => !e.gioVao || e.gioVao === '');
+document.querySelector('#tableAbsent tbody').innerHTML = absentList.length > 0
+  ? absentList.map(e => `<tr>
+      <td>${e.ten}</td>
+      <td>${e.donVi}</td>
+      <td><span class="badge badge-gray">${e.nhomMay}</span></td>
+    </tr>`).join('')
+  : '<tr><td colspan="3" style="text-align:center;color:#9aa0a6;padding:20px;">Không có ai vắng</td></tr>';
+
+// ===== BIỂU ĐỒ XU HƯỚNG (demo 7 ngày) =====
+new Chart(document.getElementById('chartTrend'), {
+  type: 'line',
+  data: {
+    labels: ['09/10', '10/10', '11/10', '12/10', '13/10', '14/10', '15/10'],
+    datasets: [
+      { label: 'Có mặt', data: [present-3, present-1, present, present-2, present+1, present-1, present], borderColor: '#1a73e8', backgroundColor: 'rgba(26,115,232,0.08)', fill: true, tension: 0.3 },
+      { label: 'Vắng', data: [absent+3, absent+1, absent, absent+2, absent-1, absent+1, absent], borderColor: '#ea4335', backgroundColor: 'rgba(234,67,53,0.08)', fill: true, tension: 0.3 },
+      { label: 'Đi muộn', data: [2, 1, 3, 2, 4, 1, late], borderColor: '#fbbc04', backgroundColor: 'rgba(251,188,4,0.08)', fill: true, tension: 0.3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+    scales: { y: { beginAtZero: true } }
+  }
+});
+</script>
+</body>
+</html>
